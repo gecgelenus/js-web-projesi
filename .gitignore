@@ -1,0 +1,8 @@
+﻿################################################################################
+# Bu .gitignore dosyası Microsoft(R) Visual Studio tarafından otomatik olarak oluşturulmuştur.
+################################################################################
+
+/.vs/js-web-projesi/FileContentIndex
+/.vs/js-web-projesi/v17
+/.vs/js-web-projesi/config
+/.vs
