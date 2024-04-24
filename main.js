@@ -8,32 +8,6 @@ const position = {
     y: 0
 }
 
-const block = {
-    name: "",
-    width: 50,
-    height: 50,
-    x: 0,
-    y: 0,
-    type: {block: grass}
-};
-
-const blockArray = Array.from({ length: 1000 }, () => ({  
-    name: "",
-    width: 50,
-    height: 50,
-    x: 0,
-    y: 0,
-    type: {block: grass} 
-    })
-);
-
-for(i = 0; i < 100; i++){
-    for(j = 0; j < 10; j++){
-        blockArray[i*10 + j].x = i*50;
-        blockArray[i*10 + j].y = j*50;
-
-    }
-}
 
 
 // Keyboard input handling
@@ -50,22 +24,27 @@ document.addEventListener('keyup', (event) => {
 
 // Game update function with keyboard input
 function update() {
+  
+
+  
   // Update game state based on keyboard input
   temppos_x = 0;
   temppos_y = 0;
 
-  if (keys['W'] || keys['w']) {
-    temppos_y -= 5; 
-  }
+  
   if (keys['A'] || keys['a']) {
     temppos_x -= 5; 
   }
-  if (keys['S'] || keys['s']) {
-    temppos_y += 5; 
-  }
   if (keys['D'] || keys['d']) {
     temppos_x += 5; 
+  }if (keys['W'] || keys['w']) {
+    if(player.acceleration.y >= -3){
+      player.acceleration.y = -3;
+    }
   }
+  applyGravity();
+  
+
 
   move(temppos_x, temppos_y);
 
@@ -79,8 +58,20 @@ function render(){
     ctx.clearRect(0, 0, cnv.width, cnv.height);
 
     for(i = 0; i < 1000; i++){
-        ctx.drawImage(blockArray[i].type.block, 0, 0, 50, 50, blockArray[i].x + position.x , blockArray[i].y + position.y, blockArray[i].width, blockArray[i].height);
+        ctx.drawImage(blockArray[i].type.block, 0, 0, 50, 50, blockArray[i].x + player.position.x , 
+          blockArray[i].y + player.position.y, blockArray[i].width, blockArray[i].height);
     }
+
+    ctx.fillRect(player.position.x, player.position.y , 50, 50);
+    console.log("--------------------");
+    console.log("pos x: " + player.position.x);
+    console.log("pos y: " + player.position.y);
+    console.log("vel x: " + player.velocity.x);
+    console.log("vel x: " + player.velocity.y);
+    console.log("accel x: " + player.acceleration.x);
+    console.log("accel x: " + player.acceleration.y);
+    console.log("--------------------");
+
 }
 
 
