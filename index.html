@@ -1,39 +1,368 @@
 <!DOCTYPE html>
-
-<html>
-
+<html lang="en">
 <head>
-<style>
-
-    body, html{
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    canvas {
-        border: solid 1px black;
-    }
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Platformer Game</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
 </head>
 <body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-    <canvas id="mainCanvas" width="1366" height="768"></canvas>
-    <img id="grass" src="grass.jpg" style="display: none;">
-    <script type="text/javascript" src="structures.js"></script>
+    <script>
 
-    <script type="text/javascript" src="helpers.js"></script>
-    
+        const targetFPS = 60; // Target frames per second
+        const frameTime = 1000 / targetFPS; // Time per frame in milliseconds
+        let lastFrameTime = 0;
 
-    <script type="text/javascript" src="main.js"></script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Player properties
+        let player = {
+            x: 50,
+            y: 50,
+            width: 50,
+            height: 50,
+            speed: 5,
+            dx: 0,
+            dy: 0,
+            gravity: 0.4,
+            direction: 1,
+            grounded: false,
+            image: new Image(),
+            playerThrow: 10,
+            runnning: false
+        };
+        player.image.src = "idle.gif";
+        // Platform properties
+        let platforms = [
+            { x: 0, y: canvas.height - 50, width: canvas.width, height: 50 },
+            { x: 200, y: canvas.height - 150, width: 100, height: 20 },
+        ];
+
+        // create level 1
+        function createLevel1() {
+            platforms = [
+                { x: 0, y: canvas.height - 50, width: canvas.width, height: 50 },
+                { x: 200, y: canvas.height - 150, width: 100, height: 20 },
+                { x: 400, y: canvas.height - 250, width: 100, height: 20 },
+                { x: 600, y: canvas.height - 350, width: 100, height: 20 },
+            ];
+        }
+
+        // create level 2
+        function createLevel2() {
+            platforms = [
+                { x: 0, y: canvas.height - 50, width: canvas.width, height: 50 },
+                { x: 200, y: canvas.height - 150, width: 100, height: 20 },
+                { x: 400, y: canvas.height - 250, width: 100, height: 20 },
+                { x: 600, y: canvas.height - 350, width: 100, height: 20 },
+                { x: 200, y: canvas.height - 450, width: 100, height: 20 },
+                { x: 400, y: canvas.height - 550, width: 100, height: 20 },
+                { x: 600, y: canvas.height - 650, width: 100, height: 20 },
+            ];
+        }
+
+        let frames = 0;
+        let imgIndex = 0;
+
+        // create array for projectiles 
+        let projectiles = [];
+        // add projectile properties
+        let projectile = {
+            x: 0,
+            y: 0,
+            width: 10,
+            height: 10,
+            speed: 15,
+            dx: 0,
+            dy: 0,
+            used: false
+        };
+        
+        //fill array with projectiles
+        for (let i = 0; i < 10; i++) {
+            projectiles.push({ ...projectile });
+        }
+
+        // create array of keys pressed
+        let keys = [];
+        // Enemy properties
+        let enemies = [];
+        const enemyWidth = 50;
+        const enemyHeight = 50;
+        const enemySpeed = 2;
+        let lastSpawnTime = 0;
+        const respawnTime = 10; // Respawn time in milliseconds
+
+        // Function to spawn enemies from either left or right side randomly
+        function spawnEnemy() {
+            const side = Math.floor(Math.random() * 10) % 2 ? 'left' : 'right';
+            const y = Math.random() * (400 - 200) + 200;
+            const x = side === 'left' ? -enemyWidth : canvas.width;
+            const speeda = side === 'left' ? enemySpeed : -enemySpeed;
+            
+            enemies.push({
+                x: x,
+                y: y,
+                width: enemyWidth,
+                height: enemyHeight,
+                speed: speeda,
+                alive: true,
+            });
+            console.log("Enemy spawned" + speeda);
+        }
+
+        // Function to update enemy positions and handle respawn
+        function updateEnemies() {
+            
+
+            enemies.forEach((enemy) => {
+                if (enemy.alive) {
+                    if (enemy.x < -enemyWidth - 150 || enemy.x > canvas.width + 150) {
+                        enemy.alive = false; // Enemy is off-screen, mark as dead
+                        console.log("Gameover");
+                        spawnEnemy();
+                    } else {
+                        enemy.x += enemy.speed; // Move left or right based on initial side
+                    }
+                }
+            });
+            enemies = enemies.filter((enemy) => enemy.alive);
+        }
+
+        // Handle keyboard input
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowRight") {
+                player.dx = player.speed;
+                player.direction = 1;
+                keys[e.key] = true;
+                keys["ArrowLeft"] = false;
+                player.runnning = true;
+            }
+            if (e.key === "ArrowLeft") {
+                player.dx = -player.speed;
+                player.direction = -1;
+                keys[e.key] = true;
+                keys["ArrowRight"] = false;
+                player.runnning = true;
+
+            }
+            if (e.key === "E" || e.key === "e") {
+                console.log("fire");
+                player.playerThrow = 0;
+                // find first unused projectile
+                projectile1 = projectiles.find((projectile) => !projectile.used);
+                // if projectile is found, set its properties
+                if (projectile1) {
+                    projectile1.used = true;
+                    if (player.direction > 0) {
+                        projectile1.x = player.x + player.width + 1;
+                        projectile1.y = player.y + player.height / 2;
+                        projectile1.dx = projectile1.speed;
+
+                    } else {
+                        projectile1.x = player.x - 1;
+                        projectile1.y = player.y + player.height / 2;
+                        projectile1.dx = -projectile1.speed;
+                    }
+                    console.log(projectiles);
+                } else {
+                    console.log("Projectile not found");
+
+                }
+            }
+            if (e.key === " ") jump();
+            if (e.key === "1") createLevel1();
+            if (e.key === "2") createLevel2();
+        });
+
+        document.addEventListener("keyup", (e) => {
+            if (e.key === "ArrowRight" && keys[e.key] == true) {
+                keys[e.key] == false;
+                player.runnning = false;
+                player.dx = 0
+            };
+            if (e.key === "ArrowLeft" && keys[e.key] == true) {
+                keys[e.key] == false;
+                player.runnning = false;
+
+                player.dx = 0
+            };
+        });
+
+        function jump() {
+            if (player.grounded) {
+                player.dy = -10;
+                player.grounded = false;
+            }
+        }
+
+        function collisionDetection(rect1, rect2) {
+            return (
+                rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.width > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.height > rect2.y
+            );
+        }
 
 
+        function update(timestamp) {
+
+            const elapsed = timestamp - lastFrameTime;
+
+            
+            if (elapsed > frameTime) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                updateEnemies();
+
+                if (player.playerThrow != 10) {
+                    player.image.src = "Throw__00" + imgIndex + ".png";
+                    if (frames % 10 == 0)
+                        player.playerThrow++;
+                    console.log(player.playerThrow);
+                } else{
+                    player.image.src = "Idle__00" + imgIndex + ".png";
+
+                }
+
+                if (player.runnning) {
+                    player.playerThrow = 10;
+                    player.image.src = "Run" + imgIndex + ".png";
+                } 
+                if (frames % 10 == 0) {
+                    imgIndex++;
+                    if (imgIndex > 9) {
+                        imgIndex = 0;
+                    }
+                }
+                frames++;
+                // Clear canvas
+
+                // Apply gravity
+                player.dy += player.gravity;
+
+                // Update player position
+                player.x += player.dx;
+                player.y += player.dy;
+
+                // Check for collisions with platforms
+                player.grounded = false;
+                platforms.forEach((platform) => {
+                    if (collisionDetection(player, platform)) {
+
+
+                        if (player.y < platform.y + platform.height && player.dy < 0) { // player is below platform
+
+
+
+                            player.y -= player.dy;
+                            player.dy = 0;
+
+                        } else if (player.y + player.height > platform.y && player.dy > 0) { // player is above platform
+                            const overlapY = player.y + player.height - platform.y;
+
+
+
+
+                            if (overlapY > 0) {
+                                player.y -= overlapY;
+                                player.dy = 0;
+                                player.grounded = true;
+                            }
+                        }
+                        if (player.x < platform.x + platform.width && player.dx < 0 && !player.grounded) { // player is to the right of platform
+
+                            player.x -= player.dx;
+                            player.dx = 0;
+                        } else if (player.x + player.width > platform.x && player.dx > 0 && !player.grounded) { // player is to the left of platform
+                            player.x -= player.dx;
+                            player.dx = 0;
+                        }
+
+                    }
+                });
+
+                // Update projectile positions
+                projectiles.forEach((projectile) => {
+                    projectile.x += projectile.dx;
+                });
+                // Remove projectiles that are colliding with platforms or out of bounds
+                projectiles.forEach((projectile) => {
+                    if (projectile.x < 0 || projectile.x > canvas.width) {
+                        projectile.used = false;
+                        projectile.dx = 0;
+                    }
+                    platforms.forEach((platform) => {
+                        if (collisionDetection(projectile, platform)) {
+                            projectile.used = false;
+                        }
+                    });
+                });
+                ctx.fillStyle = 'blue'; // Example color for enemies
+                enemies.forEach((enemy) => {
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                });
+                // draw projectiles on canvas
+                ctx.fillStyle = "#333";
+                projectiles.forEach((projectile) => {
+                    if (projectile.used) {
+                        ctx.fillRect(projectile.x, projectile.y, projectile.width, projectile.height);
+                    }
+                });
+
+                // Keep player within canvas bounds
+                if (player.x < 0) player.x = 0;
+                if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+                if (player.y < 0) player.y = 0;
+                if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+
+                //check for projectile collision with enemies and delete them if they collide
+                enemies.forEach((enemy) => {
+                    projectiles.forEach((projectile) => {
+                        if (collisionDetection(projectile, enemy)) {
+                            enemy.alive = false;
+                            projectile.used = false;
+                            spawnEnemy();
+                        }
+                    });
+                });
+
+
+
+
+                // Draw platforms
+                ctx.fillStyle = "#333";
+                platforms.forEach((platform) => {
+                    ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                });
+
+                // Draw player
+                if (player.direction > 0)
+                    ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
+                else {
+                    ctx.save();
+                    ctx.translate(player.x + player.width, player.y);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(player.image, 0, 0, player.width, player.height);
+                    ctx.restore();
+                }
+                lastFrameTime = timestamp - (elapsed % frameTime);
+            }
+
+            requestAnimationFrame(update);
+        }
+        createLevel1();
+        spawnEnemy();
+        update();
+    </script>
 </body>
-
-
 </html>

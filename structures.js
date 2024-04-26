@@ -11,17 +11,23 @@ const blockArray = Array.from({ length: 1000 }, () => ({
     })
 );
 
-for(i = 0; i < 100; i++){
-    for(j = 0; j < 10; j++){
-        blockArray[i*10 + j].x = i*50;
-        blockArray[i*10 + j].y = j*50;
-
+// fill blockArray with blocks of grass type between -500 and 500 on x axis and
+// 500 and 1500 on y axis in order
+let i = 0;
+for (let y = 500; y < 1500; y += 50) {
+    for (let x = -500; x < 500; x += 50) {
+        blockArray[i].x = x;
+        blockArray[i].y = y;
+        blockArray[i].name = "grass";
+        i++;
     }
 }
+console.log(i);
 
 
 const player = {
-    position: { x: 500, y: 100},
-    acceleration: { x: 0, y: 0},
+    position: { x: 0, y: 100},
+    acceleration: { x: 0, y: -1},
     velocity: { x: 0, y: 0}
 };
+

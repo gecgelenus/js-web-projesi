@@ -1,12 +1,23 @@
-function move(direction_x, direction_y) {
+function move(direction_x, direction_y, deltaTime, pl) {
+    if (Number.isNaN(deltaTime)) {
+        console.log("deltaTime is NaN");
+        return;
+    }
+    if (pl.acceleration.x != 0) {
+        pl.velocity.x += deltaTime * pl.acceleration.x;
+    }
+    if (pl.acceleration.y != 0) {
+        pl.velocity.y += deltaTime * pl.acceleration.y;
+    }
 
-
-    player.velocity.x += player.acceleration.x;
-    player.velocity.y += player.acceleration.y;
-
-    if(direction_x == 0 && direction_y == 0){
-        player.position.x += player.velocity.x;
-        player.position.y += player.velocity.y;
+    if (direction_x == 0 && direction_y == 0) {
+        
+        if (pl.velocity.x != 0) {
+            pl.position.x += deltaTime * pl.velocity.x;
+        }
+        if (pl.velocity.y != 0) {
+            pl.position.y += deltaTime * pl.velocity.y;
+        }
         return;
     }
 
@@ -14,55 +25,61 @@ function move(direction_x, direction_y) {
     // Perform collision check
     for (let i = 0; i < blockArray.length; i++) {
         const block = blockArray[i];
-        if (player.position.x + direction_x === block.x && player.position.y + direction_y === block.y) {
+        if (pl.position.x + direction_x === block.x && pl.position.y + direction_y === block.y) {
             console.log("collision detected");
-            player.velocity.x = 0;
-            player.velocity.y = 0;
+            pl.velocity.x = 0;
+            pl.velocity.y = 0;
             return; // Exit the function to prevent further movement
         }
     }
 
-    player.position.x += player.velocity.x;
-    player.position.y += player.velocity.y;
 
 
     // No collision, update the position
-    player.position.x += direction_x;
-    player.position.y += direction_y;
+    pl.position.x += (direction_x + pl.velocity.x) * deltaTime;
+    pl.position.y += (direction_x + pl.velocity.x) * deltaTime;
+    console.log("movement");
+    
 
     // Continue with the rest of your code
     // ...
 }
 
 
-function applyGravity(){
-
-    //check if player is on the ground
-
-    if(player.acceleration.y < 0){
-        player.acceleration.y += 1;
+function applyGravity(deltaTime, pl){
+    if (Number.isNaN(deltaTime)) {
+        console.log("deltaTime is NaN");
         return;
     }
 
     let onGround = false;
     //check if player is inside a block
-    for (let i = 0; i < blockArray.length; i++) {
+    if (pl.position.y < 0) {
+        pl.acceleration.y = 0;
+        pl.velocity.y = 0;
+        pl.position.y = 0;
+        onGround = true;
+        return;
+    }
+    for (let i = 0; i < 400; i++) {
         const block = blockArray[i];
-        if (player.position.x >= block.x && player.position.x <= block.x + block.width && player.position.y + 50 == block.y) {
+
+        if (pl.position.x >= block.x && pl.position.x <= block.x + block.width && pl.position.y + 50 == block.y) {
             console.log("on the ground");
-            player.acceleration.y = 0;
-            player.velocity.y = 0;
+            canJump = true;
+            pl.acceleration.y = 0;
+            pl.velocity.y = 0;
             onGround = true;
             break;
         }
     }
-
-
-
+    //check if player is on the ground
     //if player is not on the ground, apply gravity
-    if(!onGround){
-        player.acceleration.y += 0.1;
+    if (!onGround) {
+        pl.acceleration.y -= deltaTime * 0.1;
     }
+    
+    
 }
 
 

@@ -3,11 +3,6 @@ const cnv = document.getElementById("mainCanvas");
 const ctx = cnv.getContext("2d");
 const grass = document.getElementById("grass");
 
-const position = {
-    x: 0,
-    y: 0
-}
-
 
 
 // Keyboard input handling
@@ -21,10 +16,9 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('keyup', (event) => {
   keys[event.key] = false;
 });
-
+let canJump = true;
 // Game update function with keyboard input
-function update() {
-  
+function update(deltaTime) {
 
   
   // Update game state based on keyboard input
@@ -32,53 +26,61 @@ function update() {
   temppos_y = 0;
 
   
-  if (keys['A'] || keys['a']) {
-    temppos_x -= 5; 
+    if (keys['A'] || keys['a']) {
+        temppos_x += 1;
+
   }
-  if (keys['D'] || keys['d']) {
-    temppos_x += 5; 
+    if (keys['D'] || keys['d']) {
+        temppos_x -= 1;
+
   }if (keys['W'] || keys['w']) {
-    if(player.acceleration.y >= -3){
-      player.acceleration.y = -3;
+    if(canJump){
+        player.acceleration.y = -3;
+        canJump = false;
     }
   }
-  applyGravity();
+    applyGravity(deltaTime, player);
   
 
-
-  move(temppos_x, temppos_y);
+    
+    move(temppos_x, temppos_y, deltaTime, player);
 
 }
 
 
 console.log(blockArray);
 
-function render(){
+function render() {
 
-    ctx.clearRect(0, 0, cnv.width, cnv.height);
+    ctx.resetTransform();
+    ctx.translate(player.position.x, player.position.y);
+    ctx.clearRect(0, 0, cnv.width*5, cnv.height*5);
 
-    for(i = 0; i < 1000; i++){
-        ctx.drawImage(blockArray[i].type.block, 0, 0, 50, 50, blockArray[i].x + player.position.x , 
-          blockArray[i].y + player.position.y, blockArray[i].width, blockArray[i].height);
-    }
+    for(i = 0; i < 400; i++){
+        ctx.drawImage(blockArray[i].type.block, 0, 0, 50, 50, blockArray[i].x, 
+          blockArray[i].y, blockArray[i].width, blockArray[i].height);
+    }   
 
-    ctx.fillRect(player.position.x, player.position.y , 50, 50);
-    console.log("--------------------");
-    console.log("pos x: " + player.position.x);
-    console.log("pos y: " + player.position.y);
-    console.log("vel x: " + player.velocity.x);
-    console.log("vel x: " + player.velocity.y);
-    console.log("accel x: " + player.acceleration.x);
-    console.log("accel x: " + player.acceleration.y);
-    console.log("--------------------");
+    ctx.fillRect(0, 0 , 50, 50);
+    
 
 }
 
 
+let lastTime = 0; // Initialize the last time
+let debugTime = 0;
+function gameloop(timestamp){
+    const deltaTime = (timestamp - lastTime);
+    lastTime = timestamp;
 
-function gameloop(){
+    if (lastTime >= debugTime) {
+        debugTime += 1000;
+        console.log(deltaTime);
+        console.log(player);
 
-    update();
+    }
+
+    update(deltaTime/10);
     render();
 
 
