@@ -9,45 +9,58 @@
             border: 1px solid black;
             display: block;
             margin: 0 auto;
-        }
+        } 
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <canvas id="textCanvas" width="800" height="200"></canvas>
 
     <script>
 
-        const targetFPS = 60; // Target frames per second
-        const frameTime = 1000 / targetFPS; // Time per frame in milliseconds
-        let lastFrameTime = 0;
+        const targetFPS = 60; // Sabitlenecek FPS değeri, eğer sabitlemezsek oyun hızı farklı cihazlarda farklı olabilir
+        const frameTime = 1000 / targetFPS; // Bir kareyi çizmek için geçen süre
+        let lastFrameTime = 0; // Son kare çizilme zamanı
+        let startTime = 0; // Oyunun başladığı zaman
+        let currentTime = 0; // Oyunun şu anki zamanı
+        // start - current yaparak oyuncunun o bölümdeki geçen süresini hesaplayabiliriz
 
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+        const canvas = document.getElementById("gameCanvas"); // Oyunun oynandığı canvas
+        const ctx = canvas.getContext("2d"); 
+        const textCanvas = document.getElementById("textCanvas"); // Geçen süre ve aşama için oluşturulan canvas
+        const textCtx = textCanvas.getContext("2d");
+        let gameRunning = false; // Oyunun çalışıp çalışmadığını kontrol etmek için değişken
+        let gameOver = false; // Oyunun bitip bitmediğini kontrol etmek için değişken
+        // 2 tane değişken oluşturmamın sebebi oyunda 2 farklı ekran olması, biri oyunun oynandığı ekran, 
+        //diğeri ise oyunun başladığı ve bittiği ekran
+        let previousTime = 0; // Önceki bölümün geçen süresi
+        let bestTime = 0; // En iyi süre
 
-        // Player properties
+        
+
+
+        let phase = 1; // Oyunun kaçıncı aşamada olduğunu belirten değişken, 1 ile başlar, her 10 saniyede bir artar
+
+        // Oyuncu özellikleri
         let player = {
             x: 50,
             y: 50,
             width: 50,
             height: 50,
             speed: 5,
-            dx: 0,
+            dx: 0, // dx ve dy oyuncunun x ve y eksenindeki hızını belirtir
             dy: 0,
-            gravity: 0.4,
-            direction: 1,
+            gravity: 0.4, // Yerçekimi
+            direction: 1, // Oyuncunun yönü, sağa baktığında 1, sola baktığında -1
             grounded: false,
-            image: new Image(),
-            playerThrow: 10,
-            runnning: false
+            image: new Image(), // Oyuncunun olduğu yere çizeceğimiz resim, animasyon yapmak için kullanıyorum
+            playerThrow: 10, // Fırlatma animasyonunu kontrol etmek için değişken
+            runnning: false // Koşma animasyonunu kontrol etmek için değişken
         };
-        player.image.src = "idle.gif";
-        // Platform properties
-        let platforms = [
-            { x: 0, y: canvas.height - 50, width: canvas.width, height: 50 },
-            { x: 200, y: canvas.height - 150, width: 100, height: 20 },
-        ];
+        
+        
 
-        // create level 1
+        // Level 1
         function createLevel1() {
             platforms = [
                 { x: 0, y: canvas.height - 50, width: canvas.width, height: 50 },
@@ -57,7 +70,7 @@
             ];
         }
 
-        // create level 2
+        // Level 2
         function createLevel2() {
             platforms = [
                 { x: 0, y: canvas.height - 50, width: canvas.width, height: 50 },
@@ -70,12 +83,13 @@
             ];
         }
 
-        let frames = 0;
+        let frames = 0; // Animasyonlarda kaçıncı karede olduğumuzu takip etmek için değişken
         let imgIndex = 0;
 
-        // create array for projectiles 
+        // Fırlatılan mermilerin dizisi
         let projectiles = [];
-        // add projectile properties
+
+        // Fırlatılan mermi özellikleri
         let projectile = {
             x: 0,
             y: 0,
@@ -87,28 +101,36 @@
             used: false
         };
         
-        //fill array with projectiles
+
+        //10 tane mermi oluşturuyoruz, oyuncu mermi fırlattıkça kullanılmayan mermiyi kullanıyoruz
         for (let i = 0; i < 10; i++) {
             projectiles.push({ ...projectile });
         }
 
-        // create array of keys pressed
+        // Eğer bir tuşa basılırsa, o tuşun değerini true yapar. Eğer tuş bırakılırsa false yapar
         let keys = [];
-        // Enemy properties
+
+        // Düşmanların Özellikleri
         let enemies = [];
         const enemyWidth = 50;
         const enemyHeight = 50;
         const enemySpeed = 2;
-        let lastSpawnTime = 0;
-        const respawnTime = 10; // Respawn time in milliseconds
+        
 
-        // Function to spawn enemies from either left or right side randomly
+        // Düşmanları oluşturmak için fonksiyon, düşmanın yönü ve yeri rastgele olacak şekilde oluşturuyoruz
         function spawnEnemy() {
-            const side = Math.floor(Math.random() * 10) % 2 ? 'left' : 'right';
-            const y = Math.random() * (400 - 200) + 200;
-            const x = side === 'left' ? -enemyWidth : canvas.width;
-            const speeda = side === 'left' ? enemySpeed : -enemySpeed;
-            
+            const side = Math.floor(Math.random() * 10) % 2 ? 'left' : 'right'; // Tarafı rastgele seçiyoruz
+            const y = Math.random() * (500 - 200) + 200; // Yükseklik 500 ile 200 arasında olacak şekilde rastgele seçiyoruz 
+            const x = side === 'left' ? -enemyWidth : canvas.width; // Eğer düşman sol taraftan geliyorsa x = 0, sağ taraftan geliyorsa x = canvas.width
+            const speeda = side === 'left' ? Number((phase / 3).toFixed(0)) + enemySpeed : (Number((phase / 3).toFixed(0)) +enemySpeed)*(-1);
+            // speeda değişkeni düşmanın hızını belirtir, aşama arttıkça düşmanın hızı da artar
+            // büyük ihtimal speed diye bir değişken vardı, ama yeni bir tane tanımlamam gerekti,onun için a ekledim sonuna
+            // Number((phase / 3).toFixed(0)) ifadesi aşamanın 3'e bölümünü alır ve ondalık kısmını atar,
+            // yani 1.1, 1.2, 1.3 gibi sayılar yerine 1, 2, 3 gibi sayılar olur
+            // daha sonra enemySpeed ile toplayarak düşmanın hızını belirleriz
+            // Eğer düşman sağ taraftan geliyorsa hızı negatif yaparak düşmanın sola gitmesini sağlarız
+
+            //DEBUG console.log((phase / 3).toFixed(0));
             enemies.push({
                 x: x,
                 y: y,
@@ -117,28 +139,64 @@
                 speed: speeda,
                 alive: true,
             });
-            console.log("Enemy spawned" + speeda);
+            //DEBUG console.log("Enemy spawned" + speeda);
         }
 
-        // Function to update enemy positions and handle respawn
+        // Düşmanların konumlarını güncellemek için fonksiyon, eğer düşman ekranın dışına çıkarsa
+        // ölü olarak işaretler ve oyunu bitirir
+        // ayrıca ölü olan düşmanları filtreleyerek sadece canlı olanları tutar, bu sayede bellekte gereksiz yere yer tutmamış oluruz
         function updateEnemies() {
-            
+
 
             enemies.forEach((enemy) => {
                 if (enemy.alive) {
-                    if (enemy.x < -enemyWidth - 150 || enemy.x > canvas.width + 150) {
-                        enemy.alive = false; // Enemy is off-screen, mark as dead
+                    if (enemy.x < -enemyWidth - 150 || enemy.x > canvas.width + 150) { // Düşman ekranın dışına çıktı
+                        enemy.alive = false; 
+                        previousTime = currentTime - startTime;
+                        gameOver = true;
                         console.log("Gameover");
-                        spawnEnemy();
-                    } else {
-                        enemy.x += enemy.speed; // Move left or right based on initial side
+                    } else { // Düşman ekran içinde, konumunu güncelle
+                        enemy.x += enemy.speed; 
                     }
                 }
             });
-            enemies = enemies.filter((enemy) => enemy.alive);
+            enemies = enemies.filter((enemy) => enemy.alive); // Ölü olan düşmanları filtrele
         }
 
-        // Handle keyboard input
+        // Başlangıç ekranı
+        function startScreen() {
+            ctx.font = "20px Arial";
+            ctx.fillStyle = "black";
+            ctx.fillText("Son ninja oyununa hoş geldin", 10, 30);
+            ctx.fillText("Düşmanlar seni dör bir yandan kuşatıyor", 10, 60);
+            ctx.fillText("Eğer düşmanlar diğer tarafa ulaşırlarsa kaybedersin", 10, 90);
+            ctx.fillText("Her 10 saniyede bir aşama atlarsın, ve her aşama öncekinden daha zorlayıcıdır", 10, 120);
+            ctx.fillText("Amacın son kalan asker olarak topraklarını savunabildiğin kadar savunmak", 10, 150);
+
+            ctx.fillText("Kontroller", 10, 210);
+            ctx.fillText("Sağa gitmek için sağ ok tuşuna bas ->", 10, 240);
+            ctx.fillText("Sola gitmek için sol ok tuşuna bas <-", 10, 270);
+            ctx.fillText("Zıplamak için yukarı ok tuşuna bas  ↑", 10, 300);
+            ctx.fillText("Dikey ateş etmek için W", 10, 330);
+            ctx.fillText("Yatay ateş etmek için E", 10, 360);
+
+            ctx.fillText("Oyunu başlatmak için Enter tuşuna bas", 10, 420);
+            
+        }
+
+        // Oyun Sonu ekranı
+        function gameOverScreen() {
+            if (previousTime > bestTime) {
+                bestTime = previousTime;
+            }
+            ctx.fillText("Oyun bitti", 10, 50);
+            ctx.fillText("Tekrar oynamak için R'ye bas", 10, 100);
+            ctx.fillText("En iyi skorun: " + bestTime.toFixed(2) + " saniye", 10, 150);
+            ctx.fillText("Önceki skorun: " + previousTime.toFixed(2) + "saniye", 10, 200);
+        }
+
+
+        // Klavye tuşlarına basıldığında çalışır
         document.addEventListener("keydown", (e) => {
             if (e.key === "ArrowRight") {
                 player.dx = player.speed;
@@ -152,17 +210,45 @@
                 player.direction = -1;
                 keys[e.key] = true;
                 keys["ArrowRight"] = false;
+                // Ters yönü false yapmamızın sebebi yön değiştirdikten sonra ters yönlü tuşu bırakınca
+                // oyuncunun durmaması için
+                // çok başımı ağrıttı bu kısım
                 player.runnning = true;
 
             }
+            if (e.key == "Enter") {
+                if (!gameOver && !gameRunning) { // Oyun başlangıç ekranındayken Enter tuşuna basıldığında oyunu başlatır
+                    gameRunning = true;
+                    previousTime = 0;
+                    phase = 1;
+                    enemies = [];
+                    projectiles = [];
+                    for (let i = 0; i < 10; i++) {
+                        projectiles.push({ ...projectile });
+                    }
+                    createLevel1();
+                    spawnEnemy();
+                    startTime = currentTime;
+                }
+            }
+            if (e.key == "R" || e.key == "r" && gameOver) {
+            // Oyun bittiğinde R tuşuna basıldığında oyunu başlangıç ekranına döndürür
+                gameOver = false;
+                gameRunning = false;
+                
+            }
             if (e.key === "E" || e.key === "e") {
-                console.log("fire");
+                //DEBUG console.log("fire");
                 player.playerThrow = 0;
-                // find first unused projectile
+                // Kullanılmayan ilk mermiyi bul
                 projectile1 = projectiles.find((projectile) => !projectile.used);
-                // if projectile is found, set its properties
+                // Eğer mermi bulunursa, özelliklerini ayarla
                 if (projectile1) {
                     projectile1.used = true;
+                    projectile1.y = 0;
+                    projectile1.x = 0;
+                    projectile1.dx = 0;
+                    projectile1.dy = 0;
                     if (player.direction > 0) {
                         projectile1.x = player.x + player.width + 1;
                         projectile1.y = player.y + player.height / 2;
@@ -173,18 +259,45 @@
                         projectile1.y = player.y + player.height / 2;
                         projectile1.dx = -projectile1.speed;
                     }
-                    console.log(projectiles);
+                    //DEBUG console.log(projectiles);
                 } else {
-                    console.log("Projectile not found");
+                    //DEBUG console.log("Projectile not found");
+
+                }
+            }
+            
+
+            if (e.key === "W" || e.key === "w") {
+                //DEBUG console.log("fire");
+                player.playerThrow = 0;
+                
+                projectile1 = projectiles.find((projectile) => !projectile.used);
+                if (projectile1) {
+                    projectile1.used = true;
+                    projectile1.y = 0;
+                    projectile1.x = 0;
+                    projectile1.dx = 0;
+                    projectile1.dy = 0;
+
+                    projectile1.y = player.y + player.height + 1;
+                    projectile1.x = player.x + player.width / 2;
+                    projectile1.dy = -projectile1.speed;
+
+
+                    //DEBUG console.log(projectiles);
+                } else {
+                    //DEBUG console.log("Projectile not found");
 
                 }
             }
             if (e.key === "ArrowUp") jump();
             if (e.key === "1") createLevel1();
+            // Level kısmı biraz karışık, aslında birden fazla level oluşturmak istiyordum ama oyunun mantığına uygun 
+            // bulmadım ve vazgeçtim. Ama bu fonksiyonlarla level oluşturulabilir
             if (e.key === "2") createLevel2();
         });
 
-        document.addEventListener("keyup", (e) => {
+        document.addEventListener("keyup", (e) => { // Tuş bırakıldığında çalışır
             if (e.key === "ArrowRight" && keys[e.key] == true) {
                 keys[e.key] == false;
                 player.runnning = false;
@@ -198,14 +311,14 @@
             };
         });
 
-        function jump() {
-            if (player.grounded) {
-                player.dy = -10;
+        function jump() { // Zıplama fonksiyonu
+            if (player.grounded) { // Eğer oyuncu zemine temas etmişse zıplama işlemi yapar
+                player.dy = -10; // Y ekseninde -10 hızla zıplar, arttırılırsa daha yükseğe zıplar
                 player.grounded = false;
             }
         }
 
-        function collisionDetection(rect1, rect2) {
+        function collisionDetection(rect1, rect2) { // Klasik collision detection fonksiyonu
             return (
                 rect1.x < rect2.x + rect2.width &&
                 rect1.x + rect1.width > rect2.x &&
@@ -215,59 +328,83 @@
         }
 
 
-        function update(timestamp) {
+        function update(timestamp) { // Oyunun ana fonksiyonu, her frame'de çalışır
+            // timestamp, oyunun başladığı andan beri geçen süreyi milisaniye cinsinden belirtir
+            currentTime = timestamp / 1000; // Geçen süreyi saniye cinsine çevirir
 
-            const elapsed = timestamp - lastFrameTime;
+            const elapsed = timestamp - lastFrameTime; // Bir önceki frame'den geçen süreyi belirtir
 
-            
-            if (elapsed > frameTime) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                updateEnemies();
 
-                if (player.playerThrow != 10) {
+            if (elapsed > frameTime) { // Eğer bir frame'den fazla süre geçtiyse, yeni frame çizilir. Böylece 60 FPS sabitlenir
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Canvas temizlenir 
+                textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height); // Text canvas temizlenir
+
+                if (gameOver) { // Eğer oyun bittiyse, oyun bitti ekranını gösterir
+                    
+                    gameOverScreen();
+                    requestAnimationFrame(update);
+                    return;
+                }
+
+                if (!gameRunning) { // Eğer oyun başlamadıysa, başlangıç ekranını gösterir
+                    startScreen();
+                    requestAnimationFrame(update);
+                    return;
+                }
+
+                
+
+                updateEnemies(); 
+
+                if (player.playerThrow != 10) { // Fırlatma animasyonununu gerçekleştirir
+                    // Fırlatma animasyonunun diğer animasyonlardan üstte olmasının sebebi en düşük öncelikli olmasıdır
+                    // Örneğin koşarken birisi fırlatma tuşuna basarsa ve koşmaya devam ederse, fırlatma animasyonu koşma animasyonunun üstünde olmalıdır
+                    // Böylece koşma animasyonu fırlatma animasyonunu ezer ve koşma animasyonu çalışır
+                    // Aksi takdirde koşarken fırlatma animasyonu çalışır ve oyuncu koşarken fırlatma animasyonu yapar
+
                     player.image.src = "Throw__00" + imgIndex + ".png";
                     if (frames % 10 == 0)
                         player.playerThrow++;
                     console.log(player.playerThrow);
-                } else{
+                } else {
                     player.image.src = "Idle__00" + imgIndex + ".png";
 
                 }
 
-                if (player.runnning) {
+                if (player.runnning) { // Koşma animasyonunu gerçekleştirir
                     player.playerThrow = 10;
                     player.image.src = "Run" + imgIndex + ".png";
-                } 
-                if (frames % 10 == 0) {
+                }
+                if (frames % 10 == 0) { // Her 10 frame'de bir animasyonun karesini değiştirir
                     imgIndex++;
                     if (imgIndex > 9) {
                         imgIndex = 0;
                     }
                 }
                 frames++;
-                // Clear canvas
+                
 
-                // Apply gravity
+                // Yerçekimi ile oyuncunun hızını günceller
                 player.dy += player.gravity;
 
-                // Update player position
+                // Oyuncunun hızına bağlı olarak konumunu günceller
                 player.x += player.dx;
                 player.y += player.dy;
 
-                // Check for collisions with platforms
+                // Platform ve oyuncu çarpışmasının kontrolü
                 player.grounded = false;
                 platforms.forEach((platform) => {
                     if (collisionDetection(player, platform)) {
 
 
-                        if (player.y < platform.y + platform.height && player.dy < 0) { // player is below platform
+                        if (player.y < platform.y + platform.height && player.dy < 0) { // Eğer oyuncu platformun altındaysa
 
 
 
                             player.y -= player.dy;
                             player.dy = 0;
 
-                        } else if (player.y + player.height > platform.y && player.dy > 0) { // player is above platform
+                        } else if (player.y + player.height > platform.y && player.dy > 0) { // Eğer oyuncu platformun üstündeyse
                             const overlapY = player.y + player.height - platform.y;
 
 
@@ -279,11 +416,13 @@
                                 player.grounded = true;
                             }
                         }
-                        if (player.x < platform.x + platform.width && player.dx < 0 && !player.grounded) { // player is to the right of platform
+                        if (player.x < platform.x + platform.width && player.dx < 0 && !player.grounded) { 
+                            // Eğer oyuncu platformun sağında ve zemine temas etmemişse
 
                             player.x -= player.dx;
                             player.dx = 0;
-                        } else if (player.x + player.width > platform.x && player.dx > 0 && !player.grounded) { // player is to the left of platform
+                        } else if (player.x + player.width > platform.x && player.dx > 0 && !player.grounded) { 
+                            // Eğer oyuncu platformun solunda ve zemine temas etmemişse
                             player.x -= player.dx;
                             player.dx = 0;
                         }
@@ -291,15 +430,22 @@
                     }
                 });
 
-                // Update projectile positions
+                // Mermilerin konumlarını günceller
                 projectiles.forEach((projectile) => {
                     projectile.x += projectile.dx;
+                    projectile.y += projectile.dy;
+
                 });
-                // Remove projectiles that are colliding with platforms or out of bounds
+
+                // Zeminle temas eden ve ya çizim alanının dışına çıkan mermileri siler
                 projectiles.forEach((projectile) => {
                     if (projectile.x < 0 || projectile.x > canvas.width) {
                         projectile.used = false;
                         projectile.dx = 0;
+                    }
+                    if (projectile.y < 0 || projectile.y > canvas.height) {
+                        projectile.used = false;
+                        projectile.dy = 0;
                     }
                     platforms.forEach((platform) => {
                         if (collisionDetection(projectile, platform)) {
@@ -307,11 +453,12 @@
                         }
                     });
                 });
-                ctx.fillStyle = 'blue'; // Example color for enemies
+                ctx.fillStyle = 'blue'; // Düşmanlar için mavi renk seçtim
                 enemies.forEach((enemy) => {
                     ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
                 });
-                // draw projectiles on canvas
+
+                // Mermilerin çizim işlemi
                 ctx.fillStyle = "#333";
                 projectiles.forEach((projectile) => {
                     if (projectile.used) {
@@ -319,16 +466,16 @@
                     }
                 });
 
-                // Keep player within canvas bounds
+                // Oyuncuyu oyun alanında tutar
                 if (player.x < 0) player.x = 0;
                 if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
                 if (player.y < 0) player.y = 0;
                 if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
 
-                //check for projectile collision with enemies and delete them if they collide
+                // Mermilerin düşmanlarla çarpışmasının kontrolünü yapar ve eğer çarpışma varsa düşmanı öldürür
                 enemies.forEach((enemy) => {
                     projectiles.forEach((projectile) => {
-                        if (collisionDetection(projectile, enemy)) {
+                        if (collisionDetection(projectile, enemy) && projectile.used == true) {
                             enemy.alive = false;
                             projectile.used = false;
                             spawnEnemy();
@@ -337,15 +484,27 @@
                 });
 
 
+                // Oyun süresini ve aşamayı ekrana yazdırır
+                textCtx.font = "20px Arial";
+                textCtx.fillStyle = "black";
+                if (currentTime - startTime > phase * 10) {
+                    phase++;
+                    spawnEnemy();
+                }
+                textCtx.fillText( "Zaman: " + (currentTime - startTime).toFixed(2) + " saniye", 10, 50);
+                textCtx.fillText("Aşama: " + phase, 10, 100);
+                
 
-
-                // Draw platforms
+                // Platformları çizdirir
                 ctx.fillStyle = "#333";
                 platforms.forEach((platform) => {
                     ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
                 });
 
-                // Draw player
+                // Oyun karakterini çizdirir
+
+                // Eğer oyuncu sağa bakıyorsa, resmi normal çizer, eğer sola bakıyorsa resmi ters çizer
+
                 if (player.direction > 0)
                     ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
                 else {
@@ -358,10 +517,9 @@
                 lastFrameTime = timestamp - (elapsed % frameTime);
             }
 
-            requestAnimationFrame(update);
+            requestAnimationFrame(update); // Yeni frame'i çağırır, frame buffer swaplama işlemi
         }
-        createLevel1();
-        spawnEnemy();
+        startScreen();
         update();
     </script>
 </body>
