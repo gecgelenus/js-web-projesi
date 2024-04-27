@@ -15,8 +15,27 @@
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     <canvas id="textCanvas" width="800" height="200"></canvas>
+    
 
     <script>
+        // Animasyon karelerini önyükledim
+        let runImages = [];
+        for (let i = 0; i < 10; i++) {
+            runImages.push(new Image().src = "Run" + i + ".png");
+            //DEBUG console.log(runImages);
+        }
+
+        let throwImages = [];
+        for (let i = 0; i < 10; i++) {
+            throwImages.push(new Image().src = "Throw__00" + i + ".png");
+            //DEBUG console.log(throwImages);
+        }
+
+        let idleImages = [];
+        for (let i = 0; i < 10; i++) {
+            idleImages.push(new Image().src = "Idle__00" + i + ".png");
+            //DEBUG console.log(idleImages);
+        }
 
         const targetFPS = 60; // Sabitlenecek FPS değeri, eğer sabitlemezsek oyun hızı farklı cihazlarda farklı olabilir
         const frameTime = 1000 / targetFPS; // Bir kareyi çizmek için geçen süre
@@ -362,18 +381,18 @@
                     // Böylece koşma animasyonu fırlatma animasyonunu ezer ve koşma animasyonu çalışır
                     // Aksi takdirde koşarken fırlatma animasyonu çalışır ve oyuncu koşarken fırlatma animasyonu yapar
 
-                    player.image.src = "Throw__00" + imgIndex + ".png";
+                    player.image.src = throwImages[imgIndex];
                     if (frames % 10 == 0)
                         player.playerThrow++;
-                    console.log(player.playerThrow);
+                    //DEBUG console.log(player.playerThrow);
                 } else {
-                    player.image.src = "Idle__00" + imgIndex + ".png";
+                    player.image.src = idleImages[imgIndex];
 
                 }
 
                 if (player.runnning) { // Koşma animasyonunu gerçekleştirir
                     player.playerThrow = 10;
-                    player.image.src = "Run" + imgIndex + ".png";
+                    player.image.src = runImages[imgIndex];
                 }
                 if (frames % 10 == 0) { // Her 10 frame'de bir animasyonun karesini değiştirir
                     imgIndex++;
