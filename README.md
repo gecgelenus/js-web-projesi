@@ -15,13 +15,13 @@ Her atışta bir düşman öldürebilirsiniz. Düşmana isabet eden ninja yıld�
 Düşmanlar 1 vuruşta ölür.
 
 ## Oyunun kontrolleri
- - Enter -- Oyunu başlatır.\n
+ - Enter -- Oyunu başlatır.
  - R -- Başlangıç ekranına yönlendirir (Oyun bittikten sonra yeniden başlatmak için)
-Sağ ok tuşu -- Karakter sağa doğru koşar
-Sol ok tuşu -- Karakter sola doğru koşar
-Yukarı ok tuşu -- Karakter zıplar
-E - Yatay yönde ateş eder (Sağa bakıyorsanız sağa, sola bakıyorsanız sola)
-W - Dikey yönde ateş eder (Sadece yukarı ateş eder)
+ - Sağ ok tuşu -- Karakter sağa doğru koşar
+ - Sol ok tuşu -- Karakter sola doğru koşar
+ - Yukarı ok tuşu -- Karakter zıplar
+ - E - Yatay yönde ateş eder (Sağa bakıyorsanız sağa, sola bakıyorsanız sola)
+ - W - Dikey yönde ateş eder (Sadece yukarı ateş eder)
 
 ## Kullanılan teknolojiler
 Programlama kısmında Javascript kullandım. Çünkü bu projenin en başta amacı Javascript ile oyun geliştirmekti. (HTML ve CSS'de tabii ki dahil)
