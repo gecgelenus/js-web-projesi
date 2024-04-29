@@ -31,4 +31,13 @@ Yani sunucunun IP adresi her yeniden başlatıldığında değişiyor. Bu demek 
 
 ## Nasıl test edebilirim?
 Tarayıcınızın adres çubuğuna IP adresini girerek oyunu test edebilirsiniz: http://54.93.222.34/
+## Oyun içi görüntüler
+# Başlangıç ekranı
+![başlangıç](https://github.com/gecgelenus/js-web-projesi/assets/44176143/608eeabb-3fd3-4f48-8db9-a8c0a4d52c1e)
+
+# Oyun içi ekran
+![oyun içi](https://github.com/gecgelenus/js-web-projesi/assets/44176143/ed801ce7-607f-4082-a5bc-e73f64377177)
+
+# Oyun sonu ekranı
+![oyun sonu](https://github.com/gecgelenus/js-web-projesi/assets/44176143/63a6487b-e501-47f2-8c2f-8b22837bb13e)
 
