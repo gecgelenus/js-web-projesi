@@ -41,3 +41,5 @@ Tarayıcınızın adres çubuğuna IP adresini girerek oyunu test edebilirsiniz:
 # Oyun sonu ekranı
 ![oyun sonu](https://github.com/gecgelenus/js-web-projesi/assets/44176143/63a6487b-e501-47f2-8c2f-8b22837bb13e)
 
+## Oyunun tanıtım videosu
+Bu linke basarak tanıtım videosuna ulaşabilirsiniz: https://youtu.be/o2nhvv447po
