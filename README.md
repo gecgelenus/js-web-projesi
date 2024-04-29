@@ -15,7 +15,7 @@ Her atışta bir düşman öldürebilirsiniz. Düşmana isabet eden ninja yıld�
 Düşmanlar 1 vuruşta ölür.
 
 ## Oyunun kontrolleri
-Enter -- Oyunu başlatır.
+Enter -- Oyunu başlatır.\n
 R -- Başlangıç ekranına yönlendirir (Oyun bittikten sonra yeniden başlatmak için)
 Sağ ok tuşu -- Karakter sağa doğru koşar
 Sol ok tuşu -- Karakter sola doğru koşar
